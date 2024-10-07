@@ -1,0 +1,109 @@
+<html>
+<head>
+<title>Spark_Assignment2.scala</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Spark_Assignment2.scala</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">ian</span><span class="s2">.</span><span class="s1">itc</span><span class="s2">.</span><span class="s1">com</span>
+
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">apache</span><span class="s2">.</span><span class="s1">spark</span><span class="s2">.</span><span class="s1">SparkConf</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">apache</span><span class="s2">.</span><span class="s1">spark</span><span class="s2">.</span><span class="s1">sql</span><span class="s2">.</span><span class="s1">SparkSession</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">apache</span><span class="s2">.</span><span class="s1">spark</span><span class="s2">.</span><span class="s1">sql</span><span class="s2">.</span><span class="s1">functions</span><span class="s2">.{</span><span class="s1">lit</span><span class="s2">, </span><span class="s1">split</span><span class="s2">, </span><span class="s1">regexp_extract</span><span class="s2">, </span><span class="s1">when</span><span class="s2">, </span><span class="s1">rank</span><span class="s2">}</span>
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">apache</span><span class="s2">.</span><span class="s1">spark</span><span class="s2">.</span><span class="s1">sql</span><span class="s2">.</span><span class="s1">expressions</span><span class="s2">.</span><span class="s1">Window</span>
+
+
+
+<span class="s0">object </span><span class="s2">Spark_Assignment2 </span><span class="s0">extends </span><span class="s1">App</span><span class="s2">{</span>
+  <span class="s0">val </span><span class="s2">sparkconf = </span><span class="s0">new </span><span class="s1">SparkConf</span><span class="s2">()</span>
+  <span class="s1">sparkconf</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s3">&quot;spark.app.name&quot;</span><span class="s2">, </span><span class="s3">&quot;Assignment_2&quot;</span><span class="s2">)</span>
+  <span class="s1">sparkconf</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s3">&quot;spark.master&quot;</span><span class="s2">, </span><span class="s3">&quot;local[1]&quot;</span><span class="s2">)</span>
+  <span class="s0">val </span><span class="s2">ss = </span><span class="s1">SparkSession</span><span class="s2">.</span><span class="s1">builder</span><span class="s2">().</span><span class="s1">config</span><span class="s2">(</span><span class="s1">sparkconf</span><span class="s2">).</span><span class="s1">getOrCreate</span>
+
+  <span class="s4">// Define Schema</span>
+  <span class="s0">val </span><span class="s2">ddlSchema =</span>
+    <span class="s3">&quot;&quot;&quot; 
+      product_number STRING, 
+      product_name STRING, 
+      product_category STRING, 
+      product_manufacturer STRING, 
+      length DOUBLE, 
+      width DOUBLE, 
+      height DOUBLE, 
+      col1 INT, 
+      col2 DOUBLE 
+  &quot;&quot;&quot;</span>
+  <span class="s4">// Read File</span>
+  <span class="s0">val </span><span class="s2">prods = </span><span class="s1">ss</span><span class="s2">.</span><span class="s1">read</span><span class="s2">.</span><span class="s1">option</span><span class="s2">(</span><span class="s3">&quot;header&quot;</span><span class="s2">, </span><span class="s0">true</span><span class="s2">).</span><span class="s1">schema</span><span class="s2">(</span><span class="s1">ddlSchema</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">csv</span><span class="s2">(</span><span class="s3">&quot;C:</span><span class="s0">\\</span><span class="s3">Users</span><span class="s0">\\</span><span class="s3">Ian Mbaya</span><span class="s0">\\</span><span class="s3">BD_Training</span><span class="s0">\\</span><span class="s3">Python</span><span class="s0">\\</span><span class="s3">products_clean</span><span class="s0">\\</span><span class="s3">part-00000-c8230129-8b9c-454f-96a2-c7fdc1e63544-c000.csv&quot;</span><span class="s2">)</span>
+
+  <span class="s4">// Define outlier thresholds</span>
+  <span class="s0">val </span><span class="s2">minLength = </span><span class="s5">1</span>
+  <span class="s0">val </span><span class="s2">maxLength = </span><span class="s5">5000</span>
+  <span class="s0">val </span><span class="s2">minWidth = </span><span class="s5">1</span>
+  <span class="s0">val </span><span class="s2">maxWidth = </span><span class="s5">5000</span>
+
+  <span class="s4">// Create Spark session</span>
+  <span class="s0">val </span><span class="s2">spark = </span><span class="s1">SparkSession</span><span class="s2">.</span><span class="s1">builder</span><span class="s2">()</span>
+    <span class="s2">.</span><span class="s1">appName</span><span class="s2">(</span><span class="s3">&quot;DataFrameDemo&quot;</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">master</span><span class="s2">(</span><span class="s3">&quot;local[1]&quot;</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">getOrCreate</span><span class="s2">()</span>
+
+  <span class="s4">// Import Spark implicits for DataFrame column access</span>
+  <span class="s0">import </span><span class="s1">spark</span><span class="s2">.</span><span class="s1">implicits</span><span class="s2">.</span><span class="s1">_</span>
+
+  <span class="s4">// Task 1 Clean the DataFrame</span>
+  <span class="s0">val </span><span class="s2">cleanedDf = </span><span class="s1">prods</span><span class="s2">.</span><span class="s1">filter</span><span class="s2">(</span><span class="s3">$&quot;length&quot; </span><span class="s1">&gt;= lit</span><span class="s2">(</span><span class="s1">minLength</span><span class="s2">) </span><span class="s1">&amp;&amp;</span>
+      <span class="s3">$&quot;length&quot; </span><span class="s1">&lt;= lit</span><span class="s2">(</span><span class="s1">maxLength</span><span class="s2">) </span><span class="s1">&amp;&amp;</span>
+      <span class="s3">$&quot;width&quot; </span><span class="s1">&gt;= lit</span><span class="s2">(</span><span class="s1">minWidth</span><span class="s2">) </span><span class="s1">&amp;&amp;</span>
+      <span class="s3">$&quot;width&quot; </span><span class="s1">&lt;= lit</span><span class="s2">(</span><span class="s1">maxWidth</span><span class="s2">)) </span><span class="s4">// Filter outliers</span>
+    <span class="s2">.</span><span class="s1">withColumn</span><span class="s2">(</span><span class="s3">&quot;storeid&quot;</span><span class="s2">, </span><span class="s1">split</span><span class="s2">(</span><span class="s3">$&quot;product_number&quot;</span><span class="s2">, </span><span class="s3">&quot;_&quot;</span><span class="s2">).</span><span class="s1">getItem</span><span class="s2">(</span><span class="s5">0</span><span class="s2">)) </span><span class="s4">// product_number into storeid</span>
+    <span class="s2">.</span><span class="s1">withColumn</span><span class="s2">(</span><span class="s3">&quot;productid&quot;</span><span class="s2">, </span><span class="s1">split</span><span class="s2">(</span><span class="s3">$&quot;product_number&quot;</span><span class="s2">, </span><span class="s3">&quot;_&quot;</span><span class="s2">).</span><span class="s1">getItem</span><span class="s2">(</span><span class="s5">1</span><span class="s2">)) </span><span class="s4">// product_number into productid</span>
+    <span class="s2">.</span><span class="s1">withColumn</span><span class="s2">(</span><span class="s3">&quot;year&quot;</span><span class="s2">, </span><span class="s1">regexp_extract</span><span class="s2">(</span><span class="s3">$&quot;product_name&quot;</span><span class="s2">, </span><span class="s3">&quot;(</span><span class="s0">\\</span><span class="s3">d{4})$&quot;</span><span class="s2">, </span><span class="s5">1</span><span class="s2">)) </span><span class="s4">// Separate year from product_name into a new column</span>
+
+  <span class="s4">// Display the cleaned DataFrame</span>
+  <span class="s1">cleanedDf</span><span class="s2">.</span><span class="s1">show</span><span class="s2">()</span>
+
+  <span class="s4">//Task 2: Transformation</span>
+  <span class="s0">val </span><span class="s2">finalDf = </span><span class="s1">cleanedDf</span><span class="s2">.</span><span class="s1">withColumn</span><span class="s2">(</span><span class="s3">&quot;product_size&quot;</span><span class="s2">, </span><span class="s1">when</span><span class="s2">(</span><span class="s3">$&quot;length&quot; </span><span class="s1">&lt; </span><span class="s5">1000</span><span class="s2">, </span><span class="s3">&quot;Small&quot;</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">when</span><span class="s2">(</span><span class="s3">$&quot;length&quot; </span><span class="s1">&gt;= </span><span class="s5">1000 </span><span class="s1">&amp;&amp; </span><span class="s3">$&quot;length&quot; </span><span class="s1">&lt; </span><span class="s5">2000</span><span class="s2">, </span><span class="s3">&quot;Medium&quot;</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">when</span><span class="s2">(</span><span class="s3">$&quot;length&quot; </span><span class="s1">&gt;= </span><span class="s5">2000 </span><span class="s1">&amp;&amp; </span><span class="s3">$&quot;length&quot; </span><span class="s1">&lt; </span><span class="s5">3000</span><span class="s2">, </span><span class="s3">&quot;Large&quot;</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">otherwise</span><span class="s2">(</span><span class="s3">&quot;Very Large&quot;</span><span class="s2">)</span>
+  <span class="s2">) </span><span class="s4">// Add product size based on length</span>
+
+  <span class="s4">// PIVOT by product category and size</span>
+  <span class="s0">val </span><span class="s2">pivotDf = </span><span class="s1">finalDf</span><span class="s2">.</span><span class="s1">groupBy</span><span class="s2">(</span><span class="s3">&quot;product_category&quot;</span><span class="s2">).</span><span class="s1">pivot</span><span class="s2">(</span><span class="s3">&quot;product_size&quot;</span><span class="s2">).</span><span class="s1">count</span><span class="s2">()</span>
+
+  <span class="s4">// Create a window specification to rank products by length</span>
+  <span class="s0">val </span><span class="s2">windowSpec = </span><span class="s1">Window</span><span class="s2">.</span><span class="s1">partitionBy</span><span class="s2">(</span><span class="s3">&quot;product_category&quot;</span><span class="s2">).</span><span class="s1">orderBy</span><span class="s2">(</span><span class="s3">$&quot;length&quot;</span><span class="s2">.</span><span class="s1">desc</span><span class="s2">)</span>
+
+  <span class="s4">// Windows Function to rank based original DataFrame</span>
+  <span class="s0">val </span><span class="s2">rankedDf = </span><span class="s1">cleanedDf</span><span class="s2">.</span><span class="s1">withColumn</span><span class="s2">(</span><span class="s3">&quot;rank&quot;</span><span class="s2">, </span><span class="s1">rank</span><span class="s2">().</span><span class="s1">over</span><span class="s2">(</span><span class="s1">windowSpec</span><span class="s2">))</span>
+
+  <span class="s4">// Filter for the second-longest product by category</span>
+  <span class="s0">val </span><span class="s2">secondDf = </span><span class="s1">rankedDf</span><span class="s2">.</span><span class="s1">filter</span><span class="s2">(</span><span class="s3">$&quot;rank&quot; </span><span class="s1">=== </span><span class="s5">2</span><span class="s2">)</span>
+
+  <span class="s4">// Display the pivot and the second-longest product DataFrames</span>
+  <span class="s1">pivotDf</span><span class="s2">.</span><span class="s1">show</span><span class="s2">()</span>
+  <span class="s1">secondDf</span><span class="s2">.</span><span class="s1">show</span><span class="s2">()</span>
+
+
+
+<span class="s2">}</span>
+
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<html>
+<head>
+<title>Spark_Assignment1.scala</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #7a7e85;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+.s6 { color: #00b8bb; font-weight: bold;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Spark_Assignment1.scala</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">ian</span><span class="s2">.</span><span class="s1">itc</span><span class="s2">.</span><span class="s1">com</span>
+
+<span class="s0">import </span><span class="s1">org</span><span class="s2">.</span><span class="s1">apache</span><span class="s2">.</span><span class="s1">spark</span><span class="s2">.</span><span class="s1">SparkContext</span>
+
+<span class="s0">object </span><span class="s2">Spark_Assignment1 </span><span class="s0">extends </span><span class="s1">App</span><span class="s2">{</span>
+  <span class="s3">// Create a New SparkContext</span>
+  <span class="s0">val </span><span class="s2">sc = </span><span class="s0">new </span><span class="s1">SparkContext</span><span class="s2">(</span><span class="s4">&quot;local[1]&quot;</span><span class="s2">, </span><span class="s1">appName </span><span class="s2">= </span><span class="s4">&quot;appName&quot;</span><span class="s2">)</span>
+
+  <span class="s3">// Read the Input File</span>
+  <span class="s0">val </span><span class="s2">sensorTemp = </span><span class="s1">sc</span><span class="s2">.</span><span class="s1">textFile</span><span class="s2">(</span><span class="s4">&quot;C:</span><span class="s0">\\</span><span class="s4">Users</span><span class="s0">\\</span><span class="s4">Ian Mbaya</span><span class="s0">\\</span><span class="s4">BD_Training</span><span class="s0">\\</span><span class="s4">data</span><span class="s0">\\</span><span class="s4">sensorTemp.csv&quot;</span><span class="s2">)</span>
+
+
+  <span class="s3">// Remove Header</span>
+  <span class="s0">val </span><span class="s2">header = </span><span class="s1">sensorTemp</span><span class="s2">.</span><span class="s1">first</span><span class="s2">()</span>
+  <span class="s0">val </span><span class="s2">data1 = </span><span class="s1">sensorTemp</span><span class="s2">.</span><span class="s1">filter</span><span class="s2">(</span><span class="s1">line </span><span class="s2">=&gt; </span><span class="s1">line != header</span><span class="s2">)</span>
+
+  <span class="s3">// Task 1: Find the Highest Temp</span>
+  <span class="s0">val </span><span class="s2">highestTemp = </span><span class="s1">data1</span><span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">line </span><span class="s2">=&gt; </span><span class="s1">line</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s4">&quot;,&quot;</span><span class="s2">)(</span><span class="s5">2</span><span class="s2">).</span><span class="s1">toDouble</span><span class="s2">).</span><span class="s1">max</span><span class="s2">()</span>
+
+  <span class="s1">println</span><span class="s2">(</span><span class="s4">s&quot;Highest temperature: </span><span class="s6">$</span><span class="s1">highestTemp</span><span class="s4">&quot;</span><span class="s2">)</span>
+
+  <span class="s3">//Task 2: Find Temps above 50 for each sensor</span>
+    <span class="s0">val </span><span class="s2">countBySensor = </span><span class="s1">data1</span><span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">line </span><span class="s2">=&gt; {</span>
+      <span class="s0">val </span><span class="s2">fields = </span><span class="s1">line</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s4">&quot;,&quot;</span><span class="s2">)</span>
+      <span class="s0">val </span><span class="s2">sensor = </span><span class="s1">fields</span><span class="s2">(</span><span class="s5">0</span><span class="s2">)</span>
+      <span class="s0">val </span><span class="s2">temp = </span><span class="s1">fields</span><span class="s2">(</span><span class="s5">2</span><span class="s2">).</span><span class="s1">toDouble</span>
+      <span class="s2">(</span><span class="s1">sensor</span><span class="s2">, </span><span class="s1">temp</span><span class="s2">)</span>
+    <span class="s2">})</span>
+    <span class="s2">.</span><span class="s1">filter </span><span class="s2">{ </span><span class="s0">case </span><span class="s2">(</span><span class="s1">_</span><span class="s2">, </span><span class="s1">temp</span><span class="s2">) =&gt; </span><span class="s1">temp &gt; </span><span class="s5">50 </span><span class="s2">}</span>
+    <span class="s2">.</span><span class="s1">map </span><span class="s2">{ </span><span class="s0">case </span><span class="s2">(</span><span class="s1">sensor</span><span class="s2">, </span><span class="s1">_</span><span class="s2">) =&gt; (</span><span class="s1">sensor</span><span class="s2">, </span><span class="s5">1</span><span class="s2">) }</span>
+    <span class="s2">.</span><span class="s1">reduceByKey</span><span class="s2">(</span><span class="s1">_ + _</span><span class="s2">)</span>
+
+  <span class="s1">countBySensor</span><span class="s2">.</span><span class="s1">collect</span><span class="s2">().</span><span class="s1">foreach </span><span class="s2">{ </span><span class="s0">case </span><span class="s2">(</span><span class="s1">sensor</span><span class="s2">, </span><span class="s1">count</span><span class="s2">) =&gt;</span>
+    <span class="s1">println</span><span class="s2">(</span><span class="s4">s&quot;</span><span class="s6">$</span><span class="s1">count</span><span class="s4">, </span><span class="s6">$</span><span class="s1">sensor</span><span class="s4">&quot;</span><span class="s2">)</span>
+  <span class="s2">}</span>
+
+
+
+<span class="s2">}</span>
+</pre>
+</body>
+</html>
